@@ -2,115 +2,148 @@
 
 ## Diagram
 
-- In this assignment, you will build a complete end-to-end IoT system as shown in Figure. This project will integrate the TCP client/server you created in Assignment 6, your
-  database from Assignment 7, and IoT sensor data to process and analyze user queries.
-  You are also expected to incorporate metadata for each IoT device created in dataniz to
-  enhance the system's functionality
+In this assignment, you will build a complete end-to-end IoT system as shown in Figure. This project will integrate the TCP client/server you created in Assignment 6, your database from Assignment 7, and IoT sensor data to process and analyze user queries. You are also expected to incorporate metadata for each IoT device created in dataniz to enhance the system's functionality.
 
 ![image](https://github.com/user-attachments/assets/ec7792d7-2434-4582-9e36-9f01252a73ba)
 
 ## Description
 
 This project is an IoT monitoring system designed to handle queries related to IoT devices. It consists of a TCP server, a client interface, and integration with a MongoDB database to retrieve IoT data. The system supports real-time queries about average moisture, water consumption, and electricity usage for connected devices.
-Features
 
-Query Support:
+### Features
 
-1. Average moisture in a refrigerator.
-2. Average water consumption in a dishwasher.
-3. Electricity consumption across multiple devices.
+- **Query Support**:
 
-Metadata Integration: Metadata from IoT devices is integrated for better data management.
+  1. Average moisture in a refrigerator.
+  2. Average water consumption in a dishwasher.
+  3. Electricity consumption across multiple devices.
 
-Data Aggregation: Efficient data aggregation for electricity consumption over the last 24 hours.
+- **Metadata Integration**: Metadata from IoT devices is integrated for better data management.
 
-Debugging Tools: Enhanced debugging for better issue tracking.
+- **Data Aggregation**: Efficient data aggregation for electricity consumption over the last 24 hours.
 
-Prerequisites
+- **Debugging Tools**: Enhanced debugging for better issue tracking.
 
-- Python 3.x
-- MongoDB instance (local or cloud, e.g., MongoDB Atlas)
-- Required Python libraries:
+## Prerequisites
 
-        pymongo
-        tabulate
-        pytz
+1. **Python Environment**
 
-Installation
+   - Python 3.7 or higher installed on both server and client machines.
+   - (Optional) Use a virtual environment (e.g., venv or conda).
 
-Clone the repository:
+2. **Python Dependencies**
+   - Install required packages via pip:
+     ```bash
+     pip install psycopg2-binary
+     ```
 
-    git clone git@github.com:lf813/cecs327-a8-group42.git
+## Installation
 
-and
+1. Clone this repository:
 
-    cd IoT-Monitoring-System
+   ```bash
+   git clone git@github.com:hugecatlover/CECS327Assignment8.git
+   cd /CECS327Assignment8
+   ```
 
-Install dependencies:
+2. **Setup NeonDB**:
+   - Ensure your NeonDB instance is running.
+   - Add your IoT data from Dataniz to a collection named `IOT_virtual` in a database named `test`.
 
-    pip install pymongo tabulate pytz
+### Example Data Structures
 
-Setup MongoDB:
+```json
+{
+  "timestamp": "1745721907",
+  "topic": "home/IOTDevices",
+  "parent_asset_uid": "kq0-7a7-80g-d1b",
+  "asset_uid": "87h-029-yao-jz5",
+  "board_name": "Fridge2_RPi4",
+  "fridge2-ACS712_Current": "-11.7389",
+  "fridge2-MLX90614_Temp": "-13.2410",
+  "DHT11 - fridge2-DHT11_Humidity": "50.8383"
+}
+```
 
-- Ensure your MongoDB instance is running.
+```json
+{
+  "timestamp": "1745721907",
+  "topic": "home/IOTDevices",
+  "parent_asset_uid": "wmz-541-8p0-ib8",
+  "asset_uid": "96z-l46-90r-z7o",
+  "board_name": "Fridge1_RPi4",
+  "Fridge1-ACS712 - ACS712_Current": "-32.8605",
+  "Fridge1-mlx90614 - MLX90614_Temp": "-14.9706",
+  "Fridge1-1DHT11 - DHT11_Humidity": "43.4481"
+}
+```
 
-Add your IoT data to a collection named IOT_virtual in a database named test. Example structure:
-
-        {
-          "cmd": "publish",
-          "payload": {
-            "board_name": "Raspberry Pi 4 - RefrigeradoraBoard",
-            "DHT11 - RefrigeradoraMoistureSensor": "65.36",
-            "ACS712 - RefrigeradoraAmmeter": "0.68",
-            "YF-S201 - SensorAgua": "20.3"
-          },
-          "time": "2024-11-30T06:38:16.000Z"
-        }
+```json
+{
+  "timestamp": "1745721908",
+  "topic": "home/IOTDevices",
+  "parent_asset_uid": "rj1-48v-x01-4o6",
+  "asset_uid": "s1q-918-81e-lbt",
+  "board_name": "Dishwasher_RPi4",
+  "Dish-ACS712_Current": "24.1053",
+  "Dish-YF-S201 - YFS201_Flow": "4.1028"
+}
+```
 
 ## Running the System
 
-1. Run the Server
+1. **Run the Server**
 
-The server connects to the database and listens for incoming queries.
+   - The server connects to the database and listens for incoming queries.
 
-    python server.py
+   ```bash
+   python server.py
+   ```
 
-- Enter the IP Address and Port Number when prompted. The server will wait for client connections and process queries.
+   - Enter the IP Address and Port Number when prompted. The server will wait for client connections and process queries.
 
-2. Run the Client
-
-The client allows you to send queries to the server.
-
-    python client.py
-
-- Enter the server's IP Address and Port Number.
-
-Choose from the available queries:
-
-1. Average moisture in a refrigerator.
-2. Average water consumption in a dishwasher.
-3. Device with the highest electricity consumption.
+2. **Run the Client**
+   - The client allows you to send queries to the server.
+   ```bash
+   python client.py
+   ```
+   - Enter the server's IP Address and Port Number.
+   - Choose from the available queries:
+     1. "average moisture"
+     2. "average water consumption"
+     3. "consumed more electricity"
 
 ## Metadata for IoT Devices
 
 IoT devices are identified using the following metadata:
 
-        Refrigerator 1:
-                board_name: `"Raspberry Pi 4 - RefrigeradoraBoard"`
-                Sensors:
-                        DHT11 - RefrigeradoraMoistureSensor**: Measures moisture levels.
-                        ACS712 - RefrigeradoraAmmeter**: Measures electricity consumption.
+```
+board_name (string): Unique device identifier.
 
-        Refrigerator 2:
-                board_name: `"board 1 7078fb94-74ef-4712-9eec-62f3aaefac90"`
-                Sensors:
-                        sensor 1 7078fb94-74ef-4712-9eec-62f3aaefac90**: Measures moisture levels.
-                        sensor 2 7078fb94-74ef-4712-9eec-62f3aaefac90**: Measures electricity consumption.
+Examples: Fridge1_RPi4, Fridge2_RPi4, Dishwasher_RPi4.
 
-        Dishwasher:
-                board_name: `"board 1 1a3e32aa-6115-475c-8993-3fadf9b4d46e"`
-                Sensors:
-                        YF-S201 - SensorAgua: Measures water consumption.
+Sensors:
+
+  DHT11 Humidity:
+    - DHT11 - fridge2-DHT11_Humidity
+    - Fridge1-1DHT11 - DHT11_Humidity
+    Measures relative humidity (%) inside each fridge.
+
+  MLX90614 Temperature (optional):
+    - fridge2-MLX90614_Temp
+    - Fridge1-mlx90614 - MLX90614_Temp
+    Measures object temperature (°C).
+
+  ACS712 Current:
+    - fridge2-ACS712_Current
+    - Fridge1-ACS712 - ACS712_Current
+    - Dish-ACS712_Current
+    Measures electrical current draw (A).
+
+  Water Flow / Usage (Dishwasher):
+    - Dish-YF-S201 - YFS201_Flow: Measures water flow rate (L/min).
+    - YF-S201 - Smart Dishwasher Water Usage Sensor: Measures total water usage per cycle.
+```
 
 This metadata is integrated into the server code for efficient data retrieval and processing.
 
@@ -119,15 +152,3 @@ This metadata is integrated into the server code for efficient data retrieval an
 Metadata from dataniz is fully integrated into the system. Device identification and sensor mapping rely on board_name and sensor-specific fields to ensure accurate data retrieval and processing.
 
 ## DEMO (Screenshots)
-
-- Run Server code on the TCP server from Google Cloud(Compute Engine)
-
-![image](https://github.com/user-attachments/assets/4aea733f-4147-4d79-8cb0-0024f8abfa92)
-
-![image](https://github.com/user-attachments/assets/bfd4a73b-b8db-4395-acb7-fd059c3956cf)
-
-- Than run the Client Code on your laptop
-
-![image](https://github.com/user-attachments/assets/0bcb7419-4ddd-4935-a3b1-3d7a41a16e31)
-
-![image](https://github.com/user-attachments/assets/e8f9d413-dd2a-445e-bd94-fcc8ec642254)
