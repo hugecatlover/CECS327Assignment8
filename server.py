@@ -1,70 +1,123 @@
-import socket  # Importing the socket module for network communication
-import ipaddress  # Importing to validate IP addresses
+import os
+import socket
+import ipaddress
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from datetime import datetime, timedelta
+import pytz
 
 
+# 1) NeonDB connection
+def get_database():
+    url = "postgresql://neondb_owner:npg_PeyFuf37rBwh@ep-dawn-cake-a5vgb7zl-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require"
+    try:
+        conn = psycopg2.connect(url, sslmode="require")
+        print("✅ Connected to NeonDB successfully.")
+        return conn
+    except Exception as e:
+        print(f"Error connecting to NeonDB: {e}")
+        return None
+
+
+# 2) Business logic
+def process_query(query, conn):
+    q = query.lower()
+
+    # compute last 3 hours in LA, then to UTC
+    la = pytz.timezone("America/Los_Angeles")
+    now_la = datetime.now(la)
+    ago_la = now_la - timedelta(hours=3)
+    now_utc = now_la.astimezone(pytz.utc)
+    ago_utc = ago_la.astimezone(pytz.utc)
+
+    with conn.cursor() as cur:
+        if "average moisture" in q:
+            cur.execute(
+                """
+                SELECT AVG((payload->>'Moisture Meter - Moisture Meter')::FLOAT) AS avg_m
+                FROM fridge_data_virtual
+                WHERE topic IN (%s, %s)
+                  AND time BETWEEN %s AND %s
+                """,
+                ("home/kitchen/fridge", "home/kitchen/fridge1", ago_utc, now_utc),
+            )
+            avg = cur.fetchone()[0]
+            if avg is None:
+                return "No moisture data available in the past 3 hours."
+            return (
+                f"Average moisture in kitchen fridge(s) over the past 3 hours "
+                f"(PST): {avg:.2f} RH%"
+            )
+
+        elif "average water consumption" in q:
+            cur.execute(
+                """
+                SELECT AVG(CAST(CAST ((payload->>'YF-S201 - Smart Dishwasher Water Usage Sensor') AS NUMERIC(19,4)) AS INT)) FROM fridge_data_virtual WHERE ((payload->>'YF-S201 - Smart Dishwasher Water Usage Sensor') IS NOT NULL);
+                """,
+            )
+            avg = cur.fetchone()[0]
+            if avg is None:
+                return "No dishwasher water‐level data available."
+            return (
+                f"Average water consumption per cycle in smart dishwasher: "
+                f"{avg:.2f} units"
+            )
+
+    return "Sorry, I can only answer about average moisture or water consumption right now."
+
+
+# 3) TCP server
 def tcp_server():
-    # Ask for server IP to bind to
-    localIP = input("What is the IP address? ")
-
-    # Validate if the IP is either IPv4 or IPv6
+    # bind info
+    localIP = input("What is the IP address? ").strip()
     try:
         ipaddress.ip_address(localIP)
     except ValueError:
         print("Invalid IP address.")
         return
 
-    # Ask for the port
-    port = int(input("What is the Port number of server? "))
-
-    # Check if the port is in the valid range
+    port = int(input("What is the Port number of server? ").strip())
     if not (0 < port <= 65535):
-        raise ValueError("Port number must be between 1 and 65535")
-
-    # Start the TCP socket for communication between server and client
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    try:
-        # Bind the socket to the local IP and port
-        server_socket.bind(("0.0.0.0", port))
-    except socket.error as err:
-        print(f"Socket binding error: {err}")
+        print("Port number must be between 1 and 65535.")
         return
 
-    # Start listening for connections
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.bind((localIP, port))
+    except Exception as e:
+        print(f"Socket binding error: {e}")
+        return
+
     print(f"Waiting for client on {localIP}:{port}...")
-    server_socket.listen(5)  # Listen for connections, with a queue size of 5 clients
+    sock.listen(5)
+
+    conn = get_database()
+    if conn is None:
+        return
+
+    client_sock, client_addr = sock.accept()
+    print(f"Connection from {client_addr}")
 
     while True:
-        # Accept the connection from a client
-        incoming_socket, incoming_address = server_socket.accept()
-        print(f"Connection from {incoming_address}")
-
-        while True:
-            try:
-                # Receive message from the client (1024 bytes max), then decode
-                message = incoming_socket.recv(1024).decode().strip()
-
-                # If the message is empty or client sends 'exit', break the loop and close connection
-                if len(message) == 0 or message.lower() == "exit":
-                    print(f"Client {incoming_address} disconnected.")
-                    break
-
-                print(f"Message received from client: {message}")
-
-                # Send the uppercase version of the received message back to the client
-                incoming_socket.send(message.upper().encode())
-
-            except ConnectionResetError:
-                print(f"Connection with {incoming_address} was reset.")
+        try:
+            msg = client_sock.recv(1024).decode().strip()
+            if not msg or msg.lower() == "exit":
+                print(f"Client {client_addr} disconnected.")
                 break
 
-        # Close the connection after the loop ends
-        incoming_socket.close()
-        print(f"Connection closed with {incoming_address}.")
-        break
+            print(f"[Client] {msg}")
+            resp = process_query(msg, conn)
+            print(f"[Server] {resp!r}")
+            client_sock.send(resp.encode())
 
-    # Close the server socket when the server is terminated
-    server_socket.close()
+        except ConnectionResetError:
+            print(f"Connection with {client_addr} reset.")
+            break
+
+    client_sock.close()
+    conn.close()
+    sock.close()
+    print("Server shut down.")
 
 
 if __name__ == "__main__":

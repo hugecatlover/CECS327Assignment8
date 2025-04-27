@@ -14,10 +14,6 @@ async def main():
 
     # Acquire a connection from the pool
     async with pool.acquire() as conn:
-        # First try to get the column names to understand the schema
-        schema_rows = await conn.fetch(
-            "SELECT column_name FROM information_schema.columns WHERE table_name = 'fridge_data_virtual';"
-        )
 
         print("Available columns:")
         for row in schema_rows:
@@ -26,6 +22,9 @@ async def main():
         # Try alternative query using the timestamp from your example
         rows = await conn.fetch(
             "SELECT payload->>'Moisture Meter - Moisture Meter', time as time_value FROM fridge_data_virtual WHERE topic = 'home/kitchen/fridge' AND payload->>'Moisture Meter - Moisture Meter' IS NOT NULL AND time > NOW() - INTERVAL '3 hours' ORDER BY time DESC;"
+        )
+        rows2 = await conn.fetch(
+            "SELECT AVG(CAST(CAST ((payload->>'YF-S201 - Smart Dishwasher Water Usage Sensor') AS NUMERIC(19,4)) AS INT)) FROM fridge_data_virtual WHERE ((payload->>'YF-S201 - Smart Dishwasher Water Usage Sensor') IS NOT NULL);"
         )
 
     # Close the pool
