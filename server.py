@@ -3,8 +3,6 @@ import socket
 import ipaddress
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from datetime import datetime, timedelta
-import pytz
 
 
 # 1) NeonDB connection
@@ -23,31 +21,36 @@ def get_database():
 def process_query(query, conn):
     q = query.lower()
 
-    # compute last 3 hours in LA, then to UTC
-    la = pytz.timezone("America/Los_Angeles")
-    now_la = datetime.now(la)
-    ago_la = now_la - timedelta(hours=3)
-    now_utc = now_la.astimezone(pytz.utc)
-    ago_utc = ago_la.astimezone(pytz.utc)
-
     with conn.cursor() as cur:
         if "average moisture" in q:
             cur.execute(
                 """
-                SELECT AVG((payload->>'Moisture Meter - Moisture Meter')::FLOAT) AS avg_m
+                SELECT
+                  payload->>'board_name'      AS fridge,
+                  AVG((kv.value)::NUMERIC)    AS avg_moisture
                 FROM fridge_data_virtual
-                WHERE topic IN (%s, %s)
-                  AND time BETWEEN %s AND %s
-                """,
-                ("home/kitchen/fridge", "home/kitchen/fridge1", ago_utc, now_utc),
+                  -- expand the JSON payload into key/value pairs
+                  CROSS JOIN LATERAL jsonb_each_text((payload::JSONB)) AS kv(key, value)
+                WHERE
+                  topic = 'home/IOTDevices'
+                  -- match only the DHT11_Humidity fields (both Fridge1 and Fridge2)
+                  AND kv.key ILIKE '%DHT11_Humidity'
+                  -- restrict to the past 3 hours
+                  AND time >= now() - INTERVAL '3 hours'
+                GROUP BY
+                  payload->>'board_name'
+                ORDER BY
+                  fridge;
+                """
             )
-            avg = cur.fetchone()[0]
-            if avg is None:
+            results = cur.fetchall()
+            if not results:
                 return "No moisture data available in the past 3 hours."
-            return (
-                f"Average moisture in kitchen fridge(s) over the past 3 hours "
-                f"(PST): {avg:.2f} RH%"
-            )
+
+            response = "Average moisture in kitchen fridges over the past 3 hours:"
+            for fridge, avg in results:
+                response += f"\n{fridge}: {avg:.2f} RH%"
+            return response
 
         elif "average water consumption" in q:
             cur.execute(
