@@ -88,6 +88,27 @@ Output: Device with highest cumulative current draw (A)
 
 ## 5. Challenges & Solutions
 
+1. Connecting to Neon from python
+Solution:
+
+
+2. Figuring out how to unwrap the payload column with SQL
+Solutions:
+
+
+3. Figuring out how to cast strings into integers for the AVG()
+Solutions:
+
+
+4. Dynamic Time Handling with SQL query
+Solutions:
 
 
 ## 6. Feedback for **Dataniz.com**
+
+* The notifications for enabling sensors covers the sensors.
+* I think Dataniz should recommend sensors depending on the projects needs.
+* Data Display should be able to be modified.
+* Add more templates for sensors
+* The UID should be saved on the site
+* The guide isn’t immediately accessible from the actual creation screen

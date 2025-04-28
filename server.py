@@ -55,7 +55,11 @@ def process_query(query, conn):
         elif "average water consumption" in q:
             cur.execute(
                 """
-                SELECT AVG(CAST(CAST ((payload->>'YF-S201 - Smart Dishwasher Water Usage Sensor') AS NUMERIC(19,4)) AS INT)) FROM fridge_data_virtual WHERE ((payload->>'YF-S201 - Smart Dishwasher Water Usage Sensor') IS NOT NULL);
+                SELECT AVG(CAST(CAST ((payload->>'YF-S201 - Smart Dishwasher Water Usage Sensor') 
+                AS NUMERIC(19,4)) 
+                AS INT)) 
+                FROM fridge_data_virtual 
+                WHERE ((payload->>'YF-S201 - Smart Dishwasher Water Usage Sensor') IS NOT NULL);
                 """,
             )
             avg = cur.fetchone()[0]
@@ -94,7 +98,6 @@ def process_query(query, conn):
             result = cur.fetchone()
             if result is None:
                 return "No electricity consumption data available."
-
             device, total_current = result
             return f"The device that consumed the most electricity is {device} with {total_current:.2f} units."
 
