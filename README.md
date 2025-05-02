@@ -147,6 +147,28 @@ Sensors:
 
 This metadata is integrated into the server code for efficient data retrieval and processing.
 
+Take note on the **Private** and **Public** ips of the virtual machines: 
+
+![image](https://github.com/user-attachments/assets/99c216c7-5261-452e-96ce-9e6033778a74)
+
+
+Connect the **Server** and **Client** using the instructions given and the Ips you took notes:
+
+![image](https://github.com/user-attachments/assets/4ed381aa-aca6-44d3-aa01-83881c004a4f)
+
+## Query 1 **"average moisture"**:
+
+![image](https://github.com/user-attachments/assets/1fdb6160-1e28-42af-9d43-0ab335a75048)
+
+## Query 2 **"average water consumption"**:
+
+![image](https://github.com/user-attachments/assets/3831160f-9900-4c33-8acf-0c0eb5787b56)
+
+## Query 3 **"consumed more electricity"**:
+
+![image](https://github.com/user-attachments/assets/d24d1b47-5fe3-4375-9fcf-4bbddf192682)
+
+
 ## Justification for Metadata Integration
 
 Metadata from dataniz is fully integrated into the system. Device identification and sensor mapping rely on board_name and sensor-specific fields to ensure accurate data retrieval and processing.
